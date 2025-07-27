@@ -4,9 +4,12 @@ using ImaginedWorlds.Endpoints;
 using ImaginedWorlds.Infrastructure;
 using ImaginedWorlds.Infrastructure.Persistence;
 using ImaginedWorlds.Infrastructure.Specialists;
+using Microsoft.AspNetCore.WebSockets;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+const string allowedOriginsPolicy = "AllowedOrigins";
 
 builder.Services.AddSingleton<IPromptManager, PromptManager>();
 builder.Services.AddSingleton<ISimulationNotifier, SignalRNotifier>();
@@ -31,19 +34,48 @@ string? connectionString = builder.Configuration.GetConnectionString("DefaultCon
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 
-builder.Services.AddMediator();
+builder.Services.AddMediator(options =>
+{
+    options.ServiceLifetime = ServiceLifetime.Scoped;
+});
+builder.Services.AddSignalR();
 
 var frontendUrl = builder.Configuration["FrontendUrl"] ?? "http://localhost:3000";
+string[] frontendUrls = [
+    frontendUrl,
+    "https://localhost:3000",
+    "http://localhost:3000",
+    "ws://localhost:3000",
+    "wss://localhost:3000"
+];
 
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy(name: allowedOriginsPolicy, policy =>
     {
-        policy.WithOrigins(frontendUrl)
+        policy.WithOrigins(frontendUrls)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
     });
+});
+
+var webSocketOptions = new WebSocketOptions
+{
+    KeepAliveInterval = TimeSpan.FromMinutes(2)
+};
+
+foreach (string url in frontendUrls)
+{
+    webSocketOptions.AllowedOrigins.Add(url);
+}
+
+builder.Services.AddWebSockets(op =>
+{
+    foreach (string url in frontendUrls)
+    {
+        op.AllowedOrigins.Add(url);
+    }
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -60,13 +92,16 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-app.UseCors();
+
+app.UseWebSockets(webSocketOptions);
+
+app.UseCors(allowedOriginsPolicy);
 
 app.MapAgentEndpoints();
 app.MapCreationEndpoints();
 
 app.MapHub<ImaginedWorldsHub>("/imaginedWorldsHub");
 
-app.MapHealthChecks("/_health");
+//app.MapHealthChecks("/_health");
 
 app.Run();

@@ -13,4 +13,5 @@ public interface ISimulationNotifier
     Task NotifyWorldUpdatedBatch(string connectionId, IReadOnlyList<CommentedTilePatchResponse> patches);
     Task NotifyWorldUpdatedPiece(string connectionId, CommentedTilePatchResponse patch);
     Task NotifyStageStarted(string connectionId, Stage stage);
+    Task NotifyGenerationFailed(string connectionId, string errorMessage);
 }

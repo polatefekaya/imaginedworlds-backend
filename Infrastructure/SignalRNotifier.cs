@@ -29,10 +29,13 @@ public class SignalRNotifier : ISimulationNotifier
 
     public Task NotifyWorldUpdatedBatch(string connectionId, IReadOnlyList<CommentedTilePatchResponse> patches) =>
         _hubContext.Clients.Client(connectionId).SendAsync("WorldUpdatedBatch", patches);
-    
+
     public Task NotifyWorldUpdatedPiece(string connectionId, CommentedTilePatchResponse patch) =>
         _hubContext.Clients.Client(connectionId).SendAsync("WorldUpdatedPiece", patch);
 
     public Task NotifyStageStarted(string connectionId, Stage stage) =>
         _hubContext.Clients.Client(connectionId).SendAsync("StageStarted", stage);
+        
+    public Task NotifyGenerationFailed(string connectionId, string errorMessage) =>
+    _hubContext.Clients.Client(connectionId).SendAsync("GenerationFailed", errorMessage);
 }
