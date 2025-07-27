@@ -4,5 +4,6 @@ namespace ImaginedWorlds.Application.Creation.StartCreation;
 
 public sealed record StartCreationCommand(
     string UserPrompt,
-    string AgentCodeName
-) : ICommand;
+    string AgentCodeName,
+    string ConnectionId
+) : ICommand<Ulid>;

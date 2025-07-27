@@ -8,17 +8,21 @@ public class ArchitectFactory : IArchitectFactory
 {
     private readonly IAgentRepository _agentRepository;
     private readonly IRequestFactory _requestFactory;
+    private readonly IPromptManager _promptManager;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ArchitectFactory(IAgentRepository agentRepository, IRequestFactory requestFactory)
+    public ArchitectFactory(IAgentRepository agentRepository, IRequestFactory requestFactory, IPromptManager promptManager, IHttpClientFactory httpClientFactory)
     {
         _agentRepository = agentRepository;
         _requestFactory = requestFactory;
+        _promptManager = promptManager;
+        _httpClientFactory = httpClientFactory;
     }
     public async Task<IArchitect> Create(string agentCodeName, CancellationToken cancellationToken)
     {
-        Agent? agent = await _agentRepository.GetAgentByCodeName(agentCodeName, cancellationToken)
+        Agent? agent = await _agentRepository.GetByCodeNameAsync(agentCodeName, cancellationToken)
             ?? throw new InvalidOperationException("The agent returned from database is null, throwing.");
 
-        return new ImaginationArchitect(agent, _requestFactory);
+        return new ImaginationArchitect(agent, _requestFactory, _promptManager, _httpClientFactory.CreateClient("llm-client"));
     }
 }

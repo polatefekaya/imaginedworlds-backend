@@ -9,8 +9,8 @@ public sealed class GridTerrain : AggregateRoot<Ulid>
 {
     private byte[,] _grid;
     public IReadOnlyList<IReadOnlyList<byte>> GridView => new Grid2DView(_grid);
-
-    private sealed class Grid2DView : IReadOnlyList<IReadOnlyList<byte>>
+    public Grid2DView NativeGridView => new Grid2DView(_grid);
+    public sealed class Grid2DView : IReadOnlyList<IReadOnlyList<byte>>
     {
         private readonly byte[,] _source;
 
@@ -21,6 +21,8 @@ public sealed class GridTerrain : AggregateRoot<Ulid>
 
         public IReadOnlyList<byte> this[int rowIndex] => new GridRowView(_source, rowIndex);
         public int Count => _source.GetLength(0);
+        public int Height => Count;
+        public int Width => this[0].Count;
 
         public IEnumerator<IReadOnlyList<byte>> GetEnumerator()
         {
@@ -33,6 +35,10 @@ public sealed class GridTerrain : AggregateRoot<Ulid>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
+    public byte[,] GetBytes()
+    {
+        return _grid;
+    }
     private sealed class GridRowView : IReadOnlyList<byte>
     {
         private readonly byte[,] _source;
@@ -78,7 +84,7 @@ public sealed class GridTerrain : AggregateRoot<Ulid>
     {
         ArgumentNullException.ThrowIfNull(tilePatch);
 
-        CheckBounds(tilePatch.Coordinates);
+        GridHelper.CheckBounds(Height, Width, tilePatch.Coordinates);
 
         if (_grid[tilePatch.Coordinates.Y, tilePatch.Coordinates.X] == (byte)tilePatch.TileType) return;
 
@@ -89,12 +95,9 @@ public sealed class GridTerrain : AggregateRoot<Ulid>
         );
     }
 
-
-    private void CheckBounds(Coordinates coordinates)
+    public TileType GetTile(int x, int y)
     {
-        bool xInBounds = coordinates.X >= 0 && coordinates.X <= Width;
-        bool yInBounds = coordinates.Y >= 0 && coordinates.Y <= Height;
-
-        if (!xInBounds || !yInBounds) throw new ArgumentException($"Given coordinates (x:{coordinates.X}, y:{coordinates.Y}) are not in bounds (x:0-{Width}, y:0-{Height}).");
+        GridHelper.CheckBounds(Height, Width, new(x, y));
+        return (TileType)_grid[y, x];
     }
 }

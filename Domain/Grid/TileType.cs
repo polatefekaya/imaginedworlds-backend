@@ -24,7 +24,7 @@ public enum TileType
     Jungle = 32,          // Dense, tropical vegetation
     Farmland = 33,        // Cultivated land for crops
     Shrubland = 34,       // Sparse bushes and shrubs
-
+    Mountain = 35,
     RoadPaved = 40,       // Modern asphalt road
     RoadDirt = 41,        // Simple dirt path or unpaved road
     RoadCobblestone = 42, // Historic stone road

@@ -5,5 +5,8 @@ namespace ImaginedWorlds.Application.Abstractions;
 
 public interface IRequestFactory
 {
-    Task<HttpRequestMessage> Create(ProviderConfiguration configuration, string userPrompt, string systemPrompt, string outputJson);
+    Task<HttpRequestMessage> Create<TResponse>(
+        ProviderConfiguration configuration,
+        string promptText,
+        string systemPrompt) where TResponse : class;
 }

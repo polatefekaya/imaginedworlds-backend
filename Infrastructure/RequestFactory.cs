@@ -1,31 +1,69 @@
 using System;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using ImaginedWorlds.Application.Abstractions;
 using ImaginedWorlds.Domain.Agent;
+using Json.Schema;
+using Json.Schema.Generation;
 
 namespace ImaginedWorlds.Infrastructure;
 
 public class RequestFactory : IRequestFactory
 {
-    public Task<HttpRequestMessage> Create(ProviderConfiguration configuration, string userPrompt, string systemPrompt, string outputJson)
-    {
-        string requestBody = configuration.RequestBodyTemplate.Replace("{{PROMPT}}", JsonEncodedText.Encode(userPrompt).ToString()).Replace("{{SYSTEM_PROMPT}}", JsonEncodedText.Encode(systemPrompt).ToString()).Replace("{{OUTPUT_JSON}}", JsonEncodedText.Encode(outputJson).ToString());
+    private readonly ISecretVault _secretVault;
 
-        var request = new HttpRequestMessage(new HttpMethod(configuration.HttpMethod), configuration.EndpointUrl)
+    public RequestFactory(ISecretVault secretVault)
+    {
+        _secretVault = secretVault;
+    }
+    
+    public async Task<HttpRequestMessage> Create<TResponse>(
+        ProviderConfiguration configuration,
+        string promptText,
+        string systemPrompt) where TResponse : class
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        var payload = new JsonObject();
+
+        if (!string.IsNullOrEmpty(systemPrompt))
         {
-            Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/json")
+            payload["system_instruction"] = new JsonObject
+            {
+                ["parts"] = new JsonArray(
+                    new JsonObject { ["text"] = systemPrompt }
+                )
+            };
+        }
+
+        payload["contents"] = new JsonArray(
+            new JsonObject
+            {
+                ["parts"] = new JsonArray(
+                    new JsonObject { ["text"] = promptText }
+                )
+            }
+        );
+
+        if (typeof(TResponse) != typeof(string))
+        {
+            var schema = new JsonSchemaBuilder().FromType<TResponse>().Build();
+            payload["generationConfig"] = new JsonObject
+            {
+                ["responseMimeType"] = "application/json",
+                ["responseSchema"] = JsonSerializer.SerializeToNode(schema)
+            };
+        }
+
+        var endpointUrl = new Uri($"{configuration.BaseUrl.AbsoluteUri.TrimEnd('/')}/v1beta/models/{configuration.ModelName}:generateContent");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, endpointUrl)
+        {
+            Content = new StringContent(payload.ToJsonString(), System.Text.Encoding.UTF8, "application/json")
         };
 
-        foreach (var header in configuration.StaticHeaders)
-        {
-            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-        }
+        string apiKey = await _secretVault.GetSecretAsync(configuration.ApiKeySecretName);
+        request.Headers.TryAddWithoutValidation("x-goog-api-key", apiKey);
 
-        if (!string.IsNullOrEmpty(configuration.ApiKeyHeaderName))
-        {
-            // Fetch the actual secret from your vault using the name stored in the config.
-            string apiKey = await _secretVault.GetSecretAsync(configuration.ApiKeySecretName);
-            request.Headers.TryAddWithoutValidation(configuration.ApiKeyHeaderName, apiKey);
-        }
+        return request;
     }
 }

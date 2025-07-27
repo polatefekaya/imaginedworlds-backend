@@ -1,38 +1,56 @@
 using System;
+using ImaginedWorlds.Application.Abstractions;
 using ImaginedWorlds.Application.Contracts;
-using ImaginedWorlds.Domain.Creation;
+using ImaginedWorlds.Domain.Agent;
 using ImaginedWorlds.Domain.Creation.ConstrustionPlan;
 using ImaginedWorlds.Domain.Grid;
-using ImaginedWorlds.Infrastructure.Specialists;
 
 namespace ImaginedWorlds.Infrastructure;
 
-public class Coordinator
+public class Coordinator : ICoordinator
 {
-    private Stage _currentStage;
-    private int _totalStages;
-
     private List<CommentedTilePatchResponse> _lastPatches = [];
     public IReadOnlyList<CommentedTilePatchResponse> LastPatches => _lastPatches.AsReadOnly();
 
-    public void Execute(IReadOnlyList<Stage> stages, GridTerrain gridTerrain)
-    {
-        _totalStages = stages.Count;
+    private readonly IExecutor _executor;
+    private readonly IFocuser _focuser;
+    private readonly ISimulationNotifier _notifier;
 
+    public Coordinator(IExecutor executor, IFocuser focuser, ISimulationNotifier simulationNotifier)
+    {
+        _executor = executor;
+        _focuser = focuser;
+        _notifier = simulationNotifier;
+    }
+
+    public async Task Execute(Agent agent, IReadOnlyList<Stage> stages, GridTerrain gridTerrain, string connectionId, CancellationToken cancellationToken)
+    {
         foreach (Stage stage in stages)
         {
             int completedSteps = 0;
+            //call notifier about stage is starting
+            await _notifier.NotifyStageStarted(connectionId, stage);
 
-            while (completedSteps < stage.TargetStepCount) {
+            while (completedSteps < stage.TargetStepCount)
+            {
                 int leftSteps = stage.TargetStepCount - completedSteps;
 
-                Executor executor = new(leftSteps, LastPatches);
-                List<CommentedTilePatchResponse> commentedPatches = executor.Iterate();
+                FocusResponse focusResponse = await _focuser.Focus(agent, LastPatches, stages, stage, gridTerrain.NativeGridView, cancellationToken);
+                //call notifier about focus changed
+                await _notifier.NotifyFocusChanged(connectionId, focusResponse);
+
+                byte[,] focusedView = GridHelper.GetFocusedView(gridTerrain.GetBytes(), focusResponse);
+
+                bool patchedEver = _lastPatches is not null && _lastPatches.Count > 0;
+
+                List<CommentedTilePatchResponse> commentedPatches = await _executor.Iterate(agent, leftSteps, stages, stage, focusedView, cancellationToken, patchedEver ? LastPatches : null);
 
                 foreach (var commentedPatch in commentedPatches)
                 {
                     gridTerrain.SetTile(commentedPatch.ToTilePatch());
                     AddToLastPatch(commentedPatch);
+                    //call the notifier about tile placed
+                    await _notifier.NotifyWorldUpdatedPiece(connectionId, commentedPatch);
                     completedSteps++;
                 }
             }
