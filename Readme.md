@@ -41,7 +41,7 @@ The world generation is a long-running task. The architecture is built to handle
 2.  **Configure Secrets:**
     Open `Properties/launchSettings.json`. Under the `https` profile's `environmentVariables` section, add your Gemini API key:
     ```json
-    "Gemini-Prod-Api-Key": "YOUR_GEMINI_API_KEY_HERE"
+    "ApiKeys:GoogleAiStudioKey": "YOUR_GEMINI_API_KEY_HERE"
     ```
 3.  **Setup Database:**
     Run the EF Core migrations to create the local `imaginedworlds.db` SQLite database.
