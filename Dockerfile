@@ -8,7 +8,7 @@ RUN dotnet restore
 COPY . .
 
 RUN dotnet publish -c Release -o /app/publish --no-restore
-RUN dotnet tool install --global dotnet-ef --tool-path /tools
+RUN dotnet tool install dotnet-ef --tool-path /tools
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
