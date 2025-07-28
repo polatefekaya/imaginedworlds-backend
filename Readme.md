@@ -53,3 +53,6 @@ The world generation is a long-running task. The architecture is built to handle
     dotnet run --launch-profile https
     ```
     The API will be available at `https://localhost:7236`.
+
+
+* the frontend repository is on https://github.com/polatefekaya/imaginedworlds-frontend
