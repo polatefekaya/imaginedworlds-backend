@@ -11,12 +11,14 @@ namespace ImaginedWorlds.Infrastructure;
 public class RequestFactory : IRequestFactory
 {
     private readonly ISecretVault _secretVault;
+    private readonly ILogger<RequestFactory> _logger;
 
-    public RequestFactory(ISecretVault secretVault)
+    public RequestFactory(ISecretVault secretVault, ILogger<RequestFactory> logger)
     {
         _secretVault = secretVault;
+        _logger = logger;
     }
-    
+
     public async Task<HttpRequestMessage> Create<TResponse>(
         ProviderConfiguration configuration,
         string promptText,
@@ -64,6 +66,7 @@ public class RequestFactory : IRequestFactory
         string apiKey = await _secretVault.GetSecretAsync(configuration.ApiKeySecretName);
         request.Headers.TryAddWithoutValidation("x-goog-api-key", apiKey);
 
+        _logger.LogDebug("Request created: {request}", await request.Content.ReadAsStringAsync());
         return request;
     }
 }

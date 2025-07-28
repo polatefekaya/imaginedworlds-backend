@@ -40,7 +40,7 @@ public class StartCreationCommandHandler : ICommandHandler<StartCreationCommand,
             await _notifier.NotifyPlanCreated(command.ConnectionId, plan);
 
             _promptManager.SetOverallGoal(plan.OverallPlan);
-            _promptManager.SetSystemPrompt("");
+            _promptManager.SetSystemPrompt("You are ImaginedWorlds, a world-building AI. Your sole purpose is to translate abstract human imagination into the structured data required to render a visual world. You are a creative partner, but also a precise, logical engine.");
 
             await _coordinator.Execute(agent, plan.Stages, terrain, command.ConnectionId, cancellationToken);
             return terrain.Id;

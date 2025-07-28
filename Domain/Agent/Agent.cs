@@ -13,17 +13,17 @@ public class Agent : AggregateRoot<Ulid>, IAgent
     public string ProviderConfiguration { get; private set; }
     public Uri IconUrl { get; private set; }
 
-    private Agent(Ulid id, string name, string codeName, string description, string providerConfiguration, Uri iconUrl) : base(id)
+    private Agent(Ulid id, string displayName, string codeName, string description, string providerConfiguration, Uri iconUrl) : base(id)
     {
         providerConfiguration.CheckNullOrWhitespace();
         iconUrl.CheckNull();
-        name.CheckNullOrWhitespace();
+        displayName.CheckNullOrWhitespace();
         description.CheckNullOrWhitespace();
         codeName.CheckNullOrWhitespace();
 
         CodeName = codeName;
         ProviderConfiguration = providerConfiguration;
-        DisplayName = name;
+        DisplayName = displayName;
         Description = description;
         IconUrl = iconUrl;
     }
