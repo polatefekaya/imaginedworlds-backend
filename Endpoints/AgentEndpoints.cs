@@ -1,5 +1,6 @@
 using System;
 using ImaginedWorlds.Application.AiAgent.AddAgent;
+using ImaginedWorlds.Application.AiAgent.GetAllAgents;
 using ImaginedWorlds.Application.AiAgent.RemoveAgent;
 using ImaginedWorlds.Application.AiAgent.UpdateAgentDetails;
 using ImaginedWorlds.Application.Contracts.Agent;
@@ -35,7 +36,7 @@ public static class AgentEndpoints
         .Produces<object>(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest);
 
-        
+
         group.MapPut("/{codeName}", async (
             [FromRoute] string codeName,
             [FromBody] UpdateAgentDetailsRequest request,
@@ -49,9 +50,9 @@ public static class AgentEndpoints
                 IconUrl = request.IconUrl,
                 ProviderConfiguration = request.ProviderConfiguration
             };
-            
+
             UpdateAgentDetailsCommand command = new(codeName, parameters);
-            
+
             await mediator.Send(command, cancellationToken);
             return Results.NoContent();
         })
@@ -67,10 +68,20 @@ public static class AgentEndpoints
         {
             RemoveAgentCommand command = new(codeName);
             await mediator.Send(command, cancellationToken);
-            
+
             return Results.NoContent();
         })
         .WithName("RemoveAgent")
         .Produces(StatusCodes.Status204NoContent);
+        
+        group.MapGet("/", async (IMediator mediator, CancellationToken cancellationToken) =>
+        {
+            GetAllAgentsQuery query = new();
+            IReadOnlyList<GetAgentResponse> agents = await mediator.Send(query, cancellationToken);
+            
+            return Results.Ok(agents);
+        })
+        .WithName("GetAllAgents")
+        .Produces<IReadOnlyList<GetAgentResponse>>(StatusCodes.Status200OK);
     }
 }

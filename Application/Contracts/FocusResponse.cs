@@ -5,4 +5,10 @@ public record FocusResponse(
     int Y,
     int Range,
     string Comments
-);
+)
+{
+    public override string ToString()
+    {
+        return $"x: {X}, y: {Y}, range: {Range}, comments: {Comments}";
+    }
+};

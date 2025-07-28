@@ -29,6 +29,8 @@ public class ImaginationArchitect : IArchitect
         _logger.LogInformation("GetPlanAsync is starting with prompt: {prompt}", prompt);
         prompt.CheckNullOrWhitespace();
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         string systemPrompt = _promptManager.SystemPrompt;
         HttpRequestMessage request = await _requestFactory.Create<ConstructionPlanResponse>(_agent.GetConfiguration(), prompt, systemPrompt);
 
@@ -40,6 +42,8 @@ public class ImaginationArchitect : IArchitect
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             ResponseWrapper? responseWrapper = await response.Content.ReadFromJsonAsync<ResponseWrapper>(cancellationToken);
             string? innerJsonText = responseWrapper?.Candidates[0]
                                        .Content.Parts[0]

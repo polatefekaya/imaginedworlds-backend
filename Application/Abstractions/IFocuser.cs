@@ -8,5 +8,5 @@ namespace ImaginedWorlds.Application.Abstractions;
 
 public interface IFocuser
 {
-    public Task<FocusResponse> Focus(Agent agent, IReadOnlyList<CommentedTilePatchResponse> lastPatches, IReadOnlyList<Stage> stages, Stage currentStage, GridTerrain.Grid2DView gridView, CancellationToken cancellationToken);
+    public Task<FocusResponse> Focus(Agent agent, IReadOnlyList<CommentedTilePatchResponse> lastPatches, IReadOnlyList<Stage> stages, Stage currentStage, GridTerrain gridTerrain, CancellationToken cancellationToken);
 }

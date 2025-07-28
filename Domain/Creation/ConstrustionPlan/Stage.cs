@@ -21,6 +21,11 @@ public record Stage
         TargetStepCount = targetStepCount;
     }
 
+    public override string ToString()
+    {
+        return $"*Stage* Name: {Name}, Description: {Description}, TargetStepCount: {TargetStepCount}, Completed: {Completed}";
+    }
+
     public void SetCompleted()
     {
         Completed = true;

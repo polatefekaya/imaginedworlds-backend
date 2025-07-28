@@ -24,6 +24,7 @@ try
 
     builder.Services.AddSingleton<IPromptManager, PromptManager>();
     builder.Services.AddSingleton<ISimulationNotifier, SignalRNotifier>();
+    builder.Services.AddSingleton<ISimulationManager, SimulationManager>();
     builder.Services.AddSingleton<ISecretVault, ConfigurationSecretVault>();
 
     builder.Services.AddScoped<IPromptBuilder, PromptBuilder>();

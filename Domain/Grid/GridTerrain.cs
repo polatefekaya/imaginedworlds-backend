@@ -67,17 +67,19 @@ public sealed class GridTerrain : AggregateRoot<Ulid>
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    private GridTerrain(int width, int height)
+    private GridTerrain(Ulid Id, int width, int height):base(Id)
     {
         if (width < 10 || height < 10) throw new ArgumentException("X and Y heights cannot be less than 10.");
         //if (xHeight != yHeight) throw new ArgumentException("X and Y heights has to be identical to keep square form");
 
         _grid = new byte[height, width];
+        Width = width;
+        Height = height;
     }
 
     public static GridTerrain Create(int width, int height)
     {
-        return new(width, height);
+        return new(Ulid.NewUlid(),width, height);
     }
 
     public void SetTile(TilePatch tilePatch)

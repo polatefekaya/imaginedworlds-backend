@@ -50,13 +50,40 @@ public static class GridHelper
 
         return focusedView;
     }
-    
 
-    public static void CheckBounds(int Height, int Width, Coordinates coordinates)
+
+    public static void CheckBounds(int Height, int Width, Coordinates coordinates, ILogger? logger = null)
     {
         bool xInBounds = coordinates.X >= 0 && coordinates.X <= Width;
         bool yInBounds = coordinates.Y >= 0 && coordinates.Y <= Height;
 
-        if (!xInBounds || !yInBounds) throw new ArgumentException($"Given coordinates (x:{coordinates.X}, y:{coordinates.Y}) are not in bounds (x:0-{Width}, y:0-{Height}).");
+        if (!xInBounds || !yInBounds)
+        {
+            ArgumentException exception = new($"Given coordinates (x:{coordinates.X}, y:{coordinates.Y}) are not in bounds (x:0-{Width}, y:0-{Height}).");
+
+            logger?.LogError(exception, "Given coordinates (x:{X}, y:{Y}) are not in bounds (x:0-{Width}, y:0-{Height}).", coordinates.X, coordinates.Y, Width, Height);
+
+            throw exception;
+        }
+    }
+
+    public static Coordinates ProjectToGlobal(int localX, int localY, FocusResponse focus, int gridWidth, int gridHeight)
+    {
+        int halfRange = focus.Range / 2;
+        int idealStartX = focus.X - halfRange;
+        int idealStartY = focus.Y - halfRange;
+
+        int actualStartX = Math.Max(0, idealStartX);
+        int actualStartY = Math.Max(0, idealStartY);
+
+        int globalX = actualStartX + localX;
+        int globalY = actualStartY + localY;
+
+        if (globalX >= gridWidth || globalY >= gridHeight)
+        {
+            throw new ArgumentOutOfRangeException(nameof(localX), $"Projected global coordinate ({globalX}, {globalY}) is not in the main grid's boundary.");
+        }
+
+        return new Coordinates(globalX, globalY);
     }
 }

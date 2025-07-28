@@ -2,6 +2,7 @@ using System;
 using ImaginedWorlds.Application.Abstractions;
 using ImaginedWorlds.Application.Contracts;
 using ImaginedWorlds.Domain.Agent;
+using ImaginedWorlds.Domain.Common;
 using ImaginedWorlds.Domain.Creation.ConstrustionPlan;
 using ImaginedWorlds.Domain.Grid;
 
@@ -16,6 +17,8 @@ public class Coordinator : ICoordinator
     private readonly IFocuser _focuser;
     private readonly ISimulationNotifier _notifier;
 
+    private const int LAST_MOVES_MEMORY = 40;
+
     public Coordinator(IExecutor executor, IFocuser focuser, ISimulationNotifier simulationNotifier)
     {
         _executor = executor;
@@ -27,15 +30,19 @@ public class Coordinator : ICoordinator
     {
         foreach (Stage stage in stages)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             int completedSteps = 0;
             //call notifier about stage is starting
             await _notifier.NotifyStageStarted(connectionId, stage);
 
             while (completedSteps < stage.TargetStepCount)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 int leftSteps = stage.TargetStepCount - completedSteps;
 
-                FocusResponse focusResponse = await _focuser.Focus(agent, LastPatches, stages, stage, gridTerrain.NativeGridView, cancellationToken);
+                FocusResponse focusResponse = await _focuser.Focus(agent, LastPatches, stages, stage, gridTerrain, cancellationToken);
                 //call notifier about focus changed
                 await _notifier.NotifyFocusChanged(connectionId, focusResponse);
 
@@ -47,10 +54,22 @@ public class Coordinator : ICoordinator
 
                 foreach (var commentedPatch in commentedPatches)
                 {
-                    gridTerrain.SetTile(commentedPatch.ToTilePatch());
-                    AddToLastPatch(commentedPatch);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    Coordinates globalCoords = GridHelper.ProjectToGlobal(
+                        commentedPatch.X,
+                        commentedPatch.Y,
+                        focusResponse,
+                        gridTerrain.Width,
+                        gridTerrain.Height
+                    );
+
+                    CommentedTilePatchResponse globalPatch = new(commentedPatch.Comment, commentedPatch.TileType, globalCoords.X, globalCoords.Y);
+
+                    gridTerrain.SetTile(globalPatch.ToTilePatch());
+                    AddToLastPatch(globalPatch);
                     //call the notifier about tile placed
-                    await _notifier.NotifyWorldUpdatedPiece(connectionId, commentedPatch);
+                    await _notifier.NotifyWorldUpdatedPiece(connectionId, globalPatch);
                     completedSteps++;
                 }
             }
@@ -59,7 +78,7 @@ public class Coordinator : ICoordinator
         }
 
     }
-    
+
 
     private void AddToLastPatch(CommentedTilePatchResponse tilePatch)
     {
@@ -67,6 +86,6 @@ public class Coordinator : ICoordinator
 
         _lastPatches.Add(tilePatch);
 
-        if (_lastPatches.Count > 20) _lastPatches.RemoveAt(0);
+        if (_lastPatches.Count > LAST_MOVES_MEMORY) _lastPatches.RemoveAt(0);
     }
 }

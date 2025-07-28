@@ -34,9 +34,16 @@ public class AgentRepository : IAgentRepository
         {
             _dbContext.Agents.Remove(agentToRemove);
             //await _dbContext.SaveChangesAsync(cancellationToken);
-            return agentToRemove.Id; 
+            return agentToRemove.Id;
         }
 
         return Ulid.Empty;
+    }
+
+    public async Task<IReadOnlyList<Agent>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.Agents
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using ImaginedWorlds.Application.Contracts.Creation;
+using ImaginedWorlds.Application.Creation.CancelCreation;
 using ImaginedWorlds.Application.Creation.StartCreation;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
@@ -29,5 +30,14 @@ public static class CreationEndpoints
         .WithName("StartCreation")
         .Produces<object>(StatusCodes.Status202Accepted)
         .Produces(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/cancel", async (
+            [FromBody] CancelCreationRequest request,
+            IMediator mediator) =>
+        {
+            await mediator.Send(new CancelCreationCommand(request.ConnectionId));
+            return Results.Accepted();
+        })
+        .WithName("CancelCreation");
     }
 }
